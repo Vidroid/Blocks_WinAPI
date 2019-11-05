@@ -6,7 +6,6 @@
 *.lo
 *.o
 *.obj
-*.sdf
 
 # Precompiled Headers
 *.gch
@@ -25,8 +24,16 @@
 *.lai
 *.la
 *.a
-*.lib
 
 # Executables
 *.out
 *.app
+
+# Misc
+*.sdf
+*.log
+*.tlog
+*.pdb
+*.idb
+*.lastbuildstate
+*.cache
