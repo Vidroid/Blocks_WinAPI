@@ -16,7 +16,13 @@ typedef unsigned char byte;
 #define null 0
 #endif
 
-#define IntRect(left,top,right,bottom) (D2D1::RectF((FLOAT)left, (FLOAT)top, (FLOAT)right, (FLOAT)bottom)
+#define IntPoint(x,y) D2D1::Point2F((FLOAT)(x), (FLOAT)(y))
+#define IntRect(left,top,right,bottom) D2D1::RectF((FLOAT)(left), (FLOAT)(top), (FLOAT)(right), (FLOAT)(bottom))
+#define BlockRect(block) IntRect(block->x, block->y, block->x + block->width, block->y + block->height + blockHeaderHeight)
+#define HeaderRect(block) IntRect(block->x, block->y, block->x + block->width, block->y + blockHeaderHeight)
+#define BodyRect(block) IntRect(block->x, block->y + blockHeaderHeight, block->x + block->width, block->y + block->height + blockHeaderHeight)
+#define CloseRect(block) IntRect(block->x + block->width - closeButtonSize, block->y, block->x + block->width, block->y + blockHeaderHeight)
+#define IntEllipse(center,x,y) D2D1::Ellipse(center, (FLOAT)(x), (FLOAT)(y))
 
 typedef enum _DrawType {
 	DT_GDI,
@@ -24,24 +30,30 @@ typedef enum _DrawType {
 	DT_DX
 } DrawType;
 
+typedef struct _Connector Connector;
+
 typedef struct _InPort {
+	Connector *connector;
 	wchar_t *name;
 } InPort;
 
 typedef struct _OutPort {
+	Connector *connector;
 	wchar_t *name;
 } OutPort;
+
+typedef struct _Ports {
+	int inPortsCount;
+	int outPortscount;
+	InPort *in;
+	OutPort *out;
+} Ports;
 
 typedef struct _Connector {
 	wchar_t *name;
 	InPort *in;
 	OutPort *out;
 } Connector;
-
-typedef struct _Ports {
-	InPort *in;
-	OutPort *out;
-} Ports;
 
 typedef struct _Block {
 	int x, y, width, height;

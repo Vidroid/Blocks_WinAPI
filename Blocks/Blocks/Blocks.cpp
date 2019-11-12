@@ -32,7 +32,7 @@ const DWORD mainWindowStyle = WS_VISIBLE | WS_SIZEBOX | WS_MAXIMIZEBOX | WS_MINI
 RECT clientRect;
 HWND hMainWindow;
 PAINTSTRUCT ps;
-int blockHeaderHeight = 20, _x, _y;
+int blockHeaderHeight = 20, closeButtonSize = blockHeaderHeight, portSize = 3, _x, _y;
 Block b1 = {10, 180, 120, 120, L"Block 1!", false, false, null};
 Block b2 = {180, 10, 120, 120, L"Block 2!", false, false, null};
 Block *selectedBlock, *draggingBlock;
@@ -127,21 +127,28 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		InvalidateRect(hMainWindow, &clientRect, 0);
 		break;
 	case WM_LBUTTONDOWN:
-		if (selectedBlock) {
-			selectedBlock->isSelected = false;
-		}
 		x = LOWORD(lParam);
 		y = HIWORD(lParam);
 		for (int i = 0; i < space->blockCount; i++) {
 			Block *block = &space->blocks[i];
-			if (x > block->x && x < block->x + block->width && y > block->y && y < block->y + blockHeaderHeight) {
+			if ((x > block->x) && (x < block->x + block->width) && (y > block->y) && (y < block->y + block->height)) {
+				if ((y > block->y) && (y < block->y + blockHeaderHeight)) {
+					if (x > block->x + block->width - closeButtonSize) {
+						block->x = -1000;
+						block->y = -1000;
+						return 0;
+					}
+					draggingBlock = block;
+					block->isDragging = true;
+					_x = block->x - x;
+					_y = block->y - y;
+				}
+				if (selectedBlock) {
+					selectedBlock->isSelected = false;
+				}
 				selectedBlock = block;
-				draggingBlock = block;
 				block->isSelected = true;
-				block->isDragging = true;
-				_x = block->x - x;
-				_y = block->y - y;
-				break;
+				return 0;
 			}
 		}
 		return 0;
@@ -234,7 +241,9 @@ void GDIDraw(Space *workingSpace, void *arg)
 	BeginPaint(hMainWindow, &ps);
 	FillRect(hdcBuffer, &clientRect, 0);
 	for (int i = 0; i < space->blockCount; i++) {
-		//GDIDrawBlock(&space->blocks[i]);
+		if (Block *block = &space->blocks[i]) {
+			GDIDrawBlock(block);
+		}
 	}
 	BitBlt(ps.hdc, 0, 0, clientRect.right, clientRect.bottom, hdcBuffer, 0, 0, SRCCOPY);
 	EndPaint(hMainWindow, &ps);
@@ -251,7 +260,9 @@ void DIBDraw(Space *workingSpace, void *arg)
 	Space *space = (Space *)workingSpace;
 	BeginPaint(hMainWindow, &ps);
 	for (int i = 0; i < space->blockCount; i++) {
-		DIBDrawBlock(&space->blocks[i]);
+		if (Block *block = &space->blocks[i]) {
+			DIBDrawBlock(block);
+		}
 	}
 	StretchDIBits(ps.hdc, 0, 0, clientRect.right, clientRect.bottom, 0, 0, clientRect.right, clientRect.bottom, (const void *)image, pbmBufferInfo, DIB_RGB_COLORS, SRCCOPY);
 	EndPaint(hMainWindow, &ps);
@@ -285,7 +296,7 @@ void GDIDrawBlock(Block *block)
 
 }
 
-void DIBDrawBlock(Block *)
+void DIBDrawBlock(Block *block)
 {
 
 }
@@ -293,16 +304,41 @@ void DIBDrawBlock(Block *)
 void DXDrawBlock(Block *block)
 {
 
-	D2D1_RECT_F header = D2D1::RectF((FLOAT)(block->x), (FLOAT)(block->y), (FLOAT)(block->x + block->width), (FLOAT)(block->y + blockHeaderHeight));
-	D2D1_RECT_F body = D2D1::RectF((FLOAT)block->x, (FLOAT)(block->y + blockHeaderHeight), (FLOAT)(block->x + block->width), (FLOAT)(block->y + block->height + blockHeaderHeight));
+	D2D1_RECT_F fullBlock = BlockRect(block);
+	D2D1_RECT_F header = HeaderRect(block);
+	D2D1_RECT_F body = BodyRect(block);
+	D2D1_RECT_F close = CloseRect(block);
 
-	pTarget->DrawRectangle(body, pBlackBrush, 1.0f, null);
+	pTarget->FillRectangle(&fullBlock, pWhiteBrush);
+	pTarget->DrawRectangle(&body, pBlackBrush, 1.0f);
 	if (block->isDragging) {
-		pTarget->FillRectangle(header, pDarkGrayBrush);
+		pTarget->FillRectangle(&header, pDarkGrayBrush);
 	} else if (block->isSelected) {
-		pTarget->FillRectangle(header, pLightGrayBrush);
+		pTarget->FillRectangle(&header, pLightGrayBrush);
 	}
-	pTarget->DrawRectangle(header, pBlackBrush, 1.0f, null);
+	pTarget->DrawRectangle(&close, pBlackBrush, 1.0f);
+	pTarget->DrawLine(IntPoint(close.left, close.top), IntPoint(close.right, close.bottom), pBlackBrush, 0.5f);
+	pTarget->DrawLine(IntPoint(close.left, close.bottom), IntPoint(close.right, close.top), pBlackBrush, 0.5f);
+	pTarget->DrawRectangle(&header, pBlackBrush, 1.0f);
 	pTarget->DrawTextW(block->headerString, wcslen(block->headerString), pBlockHeaderTextFormat, &header, pBlackBrush);
+	
+	if (block->ports) {
+
+		float inPortsStep = (float)(block->height - blockHeaderHeight) / (block->ports->inPortsCount + 1);
+		float outPortsStep = (float)(block->height - blockHeaderHeight) / (block->ports->outPortscount + 1);
+
+		float portHeight = (float)(block->y + blockHeaderHeight);
+		for (int i = 0; i < block->ports->inPortsCount; i++, portHeight += inPortsStep) {
+			D2D1_ELLIPSE port = IntEllipse(IntPoint(block->x, portHeight), portSize, portSize);
+			pTarget->DrawEllipse(&port, pBlackBrush, 0.5f);
+		}
+
+		portHeight = (float)(block->y + blockHeaderHeight);
+		for (int i = 0; i < block->ports->inPortsCount; i++, portHeight += inPortsStep) {
+			D2D1_ELLIPSE port = IntEllipse(IntPoint(block->x + block->width, portHeight), portSize, portSize);
+			pTarget->DrawEllipse(&port, pBlackBrush, 0.5f);
+		}
+
+	}
 
 }
