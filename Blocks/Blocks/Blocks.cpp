@@ -3,15 +3,20 @@
 // Direct2D interfaces
 ID2D1Factory *pd2Factory;
 ID2D1HwndRenderTarget *pTarget;
-ID2D1SolidColorBrush *pBlackBrush, *pWhiteBrush, *pLightGrayBrush, *pDarkGrayBrush;
+ID2D1SolidColorBrush *pBlackBrush, *pWhiteBrush, *pLightGrayBrush, *pDarkGrayBrush,
+	*pBlueColorBrush, *pRedColorBrush, *pGreenColorBrush, *pYellowColorBrush;
 
 // Direct2D variables
 D2D1_RENDER_TARGET_PROPERTIES rtProp;
 D2D1_HWND_RENDER_TARGET_PROPERTIES hwndrtProp;
-D2D1_COLOR_F blackColor = D2D1::ColorF(D2D1::ColorF::Black, 1.0f),
-	whiteColor = D2D1::ColorF(D2D1::ColorF::White, 1.0f),
-	lightGrayColor = D2D1::ColorF(D2D1::ColorF::LightGray, 1.0f),
-	darkGrayColor = D2D1::ColorF(D2D1::ColorF::DarkGray, 1.0f);
+D2D1_COLOR_F blackColor = D2D1::ColorF(D2D1::ColorF::Black, 1),
+	whiteColor = D2D1::ColorF(D2D1::ColorF::White),
+	lightGrayColor = D2D1::ColorF(D2D1::ColorF::LightGray),
+	darkGrayColor = D2D1::ColorF(D2D1::ColorF::DarkGray),
+	blueColor = D2D1::ColorF(D2D1::ColorF::Blue),
+	redColor = D2D1::ColorF(D2D1::ColorF::Red),
+	greenColor = D2D1::ColorF(D2D1::ColorF::Green),
+	yellowColor = D2D1::ColorF(D2D1::ColorF::Yellow);
 
 // DirectWrite interfaces
 IDWriteFactory *pdwFactory;
@@ -33,9 +38,10 @@ RECT clientRect;
 HWND hMainWindow;
 PAINTSTRUCT ps;
 int blockHeaderHeight = 20, closeButtonSize = blockHeaderHeight, portSize = 3, _x, _y;
-Block b1 = {10, 180, 120, 120, L"Block 1!", false, false, null};
-Block b2 = {180, 10, 120, 120, L"Block 2!", false, false, null};
+Block b1 = {10, 180, 120, 120, L"Block 1!", false, false, {0, 2, null, null}};
+Block b2 = {180, 10, 120, 120, L"Block 2!", false, false, {3, 3, null, null}};
 Block *selectedBlock, *draggingBlock;
+
 Space _space;
 Space *space = &_space;
 
@@ -53,7 +59,7 @@ WNDCLASSEXW windowClass = {sizeof(WNDCLASSEXW), 0, (WNDPROC)WindowProc, 0, 0, 0,
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
 
-	drawType = DT_DX;
+	drawType = CURRENT_DRAW_TYPE;
 
 	switch (drawType) {
 	case DT_GDI:
@@ -168,7 +174,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		InvalidateRect(hMainWindow, &clientRect, 0);
 		return 0;
 	case WM_PAINT:
-		drawProc(space, (void *)drawArg);
+		drawProc(space, drawArg);
 		return 0;
 	}
 	return DefWindowProcW(hWnd, uMsg, wParam, lParam);
@@ -189,7 +195,7 @@ void GDIInit(void)
 
 void DIBInit(void)
 {
-	
+
 	screen.x = GetSystemMetrics(SM_CXSCREEN);
 	screen.y = GetSystemMetrics(SM_CYSCREEN);
 	pbmBufferInfo = (BITMAPINFO *)calloc(1, sizeof(BITMAPINFO));
@@ -225,6 +231,10 @@ void DXInit(void)
 		pTarget->CreateSolidColorBrush(whiteColor, &pWhiteBrush);
 		pTarget->CreateSolidColorBrush(lightGrayColor, &pLightGrayBrush);
 		pTarget->CreateSolidColorBrush(darkGrayColor, &pDarkGrayBrush);
+		pTarget->CreateSolidColorBrush(blueColor, &pBlueColorBrush);
+		pTarget->CreateSolidColorBrush(redColor, &pRedColorBrush);
+		pTarget->CreateSolidColorBrush(greenColor, &pGreenColorBrush);
+		pTarget->CreateSolidColorBrush(yellowColor, &pYellowColorBrush);
 	}
 	pdwFactory->CreateTextFormat(L"Arial", null, DWRITE_FONT_WEIGHT_REGULAR, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL, 18.0f, L"en-us", &pBlockHeaderTextFormat);
 
@@ -236,7 +246,7 @@ void GDIDraw(Space *workingSpace, void *arg)
 	if (!workingSpace) {
 		return;
 	}
-	
+
 	Space *space = (Space *)workingSpace;
 	BeginPaint(hMainWindow, &ps);
 	FillRect(hdcBuffer, &clientRect, 0);
@@ -256,7 +266,7 @@ void DIBDraw(Space *workingSpace, void *arg)
 	if (!workingSpace) {
 		return;
 	}
-	
+
 	Space *space = (Space *)workingSpace;
 	BeginPaint(hMainWindow, &ps);
 	for (int i = 0; i < space->blockCount; i++) {
@@ -275,7 +285,7 @@ void DXDraw(Space *workingSpace, void *arg)
 	if (!pTarget || !workingSpace) {
 		return;
 	}
-	
+
 	Space *space = (Space *)workingSpace;
 	pTarget->BeginDraw();
 	pTarget->Clear(&whiteColor);
@@ -321,24 +331,23 @@ void DXDrawBlock(Block *block)
 	pTarget->DrawLine(IntPoint(close.left, close.bottom), IntPoint(close.right, close.top), pBlackBrush, 0.5f);
 	pTarget->DrawRectangle(&header, pBlackBrush, 1.0f);
 	pTarget->DrawTextW(block->headerString, wcslen(block->headerString), pBlockHeaderTextFormat, &header, pBlackBrush);
-	
-	if (block->ports) {
 
-		float inPortsStep = (float)(block->height - blockHeaderHeight) / (block->ports->inPortsCount + 1);
-		float outPortsStep = (float)(block->height - blockHeaderHeight) / (block->ports->outPortscount + 1);
-
-		float portHeight = (float)(block->y + blockHeaderHeight);
-		for (int i = 0; i < block->ports->inPortsCount; i++, portHeight += inPortsStep) {
+	if (block->ports.inPortsCount) {
+		float inPortsStep = (float)(block->height) / (block->ports.inPortsCount + 1);
+		float portHeight = (float)(block->y + blockHeaderHeight + inPortsStep);
+		for (int i = 0; i < block->ports.inPortsCount; i++, portHeight += inPortsStep) {
 			D2D1_ELLIPSE port = IntEllipse(IntPoint(block->x, portHeight), portSize, portSize);
-			pTarget->DrawEllipse(&port, pBlackBrush, 0.5f);
+			pTarget->FillEllipse(&port, pBlackBrush);
 		}
-
-		portHeight = (float)(block->y + blockHeaderHeight);
-		for (int i = 0; i < block->ports->inPortsCount; i++, portHeight += inPortsStep) {
+	}
+		
+	if (block->ports.outPortsCount) {
+		float outPortsStep = (float)(block->height) / (block->ports.outPortsCount + 1);
+		float portHeight = (float)(block->y + blockHeaderHeight + outPortsStep);
+		for (int i = 0; i < block->ports.outPortsCount; i++, portHeight += outPortsStep) {
 			D2D1_ELLIPSE port = IntEllipse(IntPoint(block->x + block->width, portHeight), portSize, portSize);
-			pTarget->DrawEllipse(&port, pBlackBrush, 0.5f);
+			pTarget->FillEllipse(&port, pBlackBrush);
 		}
-
 	}
 
 }

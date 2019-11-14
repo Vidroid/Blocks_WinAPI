@@ -46,7 +46,6 @@
       <UseUnicodeForAssemblerListing>true</UseUnicodeForAssemblerListing>
       <FavorSizeOrSpeed>Size</FavorSizeOrSpeed>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
-      <MinimalRebuild>true</MinimalRebuild>
       <ExceptionHandling>false</ExceptionHandling>
       <StructMemberAlignment>1Byte</StructMemberAlignment>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
@@ -66,10 +65,15 @@
     </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="BlockClasses.cpp" />
     <ClCompile Include="Blocks.cpp" />
+    <ClCompile Include="BlockStructs.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="BlockClasses.hpp" />
     <ClInclude Include="Blocks.hpp" />
+    <ClInclude Include="BlockStructs.hpp" />
+    <ClInclude Include="Config.h" />
     <ClInclude Include="Drawing.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
