@@ -1,2 +1,4 @@
 # Blocks_WinAPI
-Blocks!
+Blocks! Just Blocks!
+You'll learn more later
+For now it's just Blocks!
