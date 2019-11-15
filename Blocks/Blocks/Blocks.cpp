@@ -27,19 +27,20 @@ IDWriteTextFormat *pBlockHeaderTextFormat;
 // Drawing variables
 DrawType drawType;
 InitProc initProc;
-DrawProc drawProc;
+DrawProc Draw;
 void *drawArg;
 
 // Common constants
 const DWORD mainWindowStyle = WS_VISIBLE | WS_SIZEBOX | WS_MAXIMIZEBOX | WS_MINIMIZEBOX | WS_SYSMENU;
+const wchar_t *const mainWindowClassName = L"BlocksClass";
+const wchar_t *const mainWindowLoadingTitle = L"Blocks! (loading...)";
+const wchar_t *const mainWindowTitle = L"Blocks!";
 
 // Common variables
 RECT clientRect;
 HWND hMainWindow;
 PAINTSTRUCT ps;
 int blockHeaderHeight = 20, closeButtonSize = blockHeaderHeight, portSize = 3, _x, _y;
-Block b1 = {10, 180, 120, 120, L"Block 1!", false, false, {0, 2, null, null}};
-Block b2 = {180, 10, 120, 120, L"Block 2!", false, false, {3, 3, null, null}};
 Block *selectedBlock, *draggingBlock;
 
 Space _space;
@@ -54,7 +55,7 @@ HBITMAP hbmBuffer;
 PixelStruct *image;
 BITMAPINFO *pbmBufferInfo;
 
-WNDCLASSEXW windowClass = {sizeof(WNDCLASSEXW), 0, (WNDPROC)WindowProc, 0, 0, 0, 0, 0, 0, 0, L"BlocksClass", 0};
+WNDCLASSEXW windowClass = {sizeof(WNDCLASSEXW), 0, (WNDPROC)WindowProc, 0, 0, 0, 0, 0, 0, 0, mainWindowClassName, 0};
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
@@ -63,15 +64,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 	switch (drawType) {
 	case DT_GDI:
-		drawProc = GDIDraw;
+		Draw = GDIDraw;
 		initProc = GDIInit;
 		break;
 	case DT_DIB:
-		drawProc = DIBDraw;
+		Draw = DIBDraw;
 		initProc = DIBInit;
 		break;
 	case DT_DX:
-		drawProc = DXDraw;
+		Draw = DXDraw;
 		initProc = DXInit;
 		break;
 	}
@@ -79,17 +80,38 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	windowClass.hInstance = hInstance;
 	windowClass.hCursor = LoadCursorW(0, IDC_ARROW);
 	RegisterClassExW(&windowClass);
-	hMainWindow = CreateWindowExW(0, L"BlocksClass", L"Blocks! (loading...)", mainWindowStyle, 0, 0, 800, 600, 0, 0, 0, 0);
+	hMainWindow = CreateWindowExW(0, mainWindowClassName, mainWindowLoadingTitle, mainWindowStyle, 0, 0, 800, 600, 0, 0, 0, 0);
 	GetClientRect(hMainWindow, &clientRect);
 
 	initProc();
 
 	space->blocks = (Block *)calloc(2, sizeof(Block));
+#ifndef USE_CLASSES
+	Block b1 = {10, 180, 120, 120, L"Block 1!", false, false, {0, 2}};
+	Block b2 = {180, 10, 120, 120, L"Block 2!", false, false, {3, 3}};
+#else
+	Block b1;
+	b1.x = 10;
+	b1.y = 180;
+	b1.width = 120;
+	b1.height = 120;
+	b1.headerString = L"Block 1!";
+	b1.ports.inPortsCount = 0;
+	b1.ports.outPortsCount = 2;
+	Block b2;
+	b2.x = 180;
+	b2.y = 10;
+	b2.width = 120;
+	b2.height = 120;
+	b2.headerString = L"Block 2!";
+	b2.ports.inPortsCount = 3;
+	b2.ports.outPortsCount = 3;
+#endif
 	space->blocks[0] = b1;
 	space->blocks[1] = b2;
 	space->blockCount = 2;
 
-	SetWindowTextW(hMainWindow, L"Blocks!");
+	SetWindowTextW(hMainWindow, mainWindowTitle);
 	
 	MSG msg;
 	while(GetMessageW(&msg, 0, 0, 0))
@@ -174,7 +196,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		InvalidateRect(hMainWindow, &clientRect, 0);
 		return 0;
 	case WM_PAINT:
-		drawProc(space, drawArg);
+		Draw(space, drawArg);
 		return 0;
 	}
 	return DefWindowProcW(hWnd, uMsg, wParam, lParam);

@@ -1,31 +1,26 @@
 #ifndef __BlockClasses_hpp__
 #define __BlockClasses_hpp__
 
-namespace Block
+namespace Blocks
 {
 
-	class Space;
-	class Block;
-	class Ports;
-	class Port;
-	class InPort;
-	class OutPort;
-	class Connector;
+	typedef class _Space Space;
+	typedef class _Block Block;
+	typedef class _Port Port;
+	typedef class _InPort InPort;
+	typedef class _OutPort OutPort;
+	typedef class _Connector Connector;
 
-	class Space
+	typedef class _Space
 	{
 	public:
-		Space();
-		~Space();
 		int blockCount;
 		Block *blocks;
-	};
+	} Space;
 
-	class Block
+	typedef class _Block
 	{
 	public:
-		Block();
-		~Block();
 		int x, y, width, height;
 		wchar_t *headerString;
 		bool isSelected, isDragging;
@@ -34,40 +29,30 @@ namespace Block
 			InPort *in;
 			OutPort *out;
 		} ports;
-	};
+	} Block;
 
-	class Port
+	typedef class _Port
 	{
 	public:
-		Port();
-		~Port();
 		Connector *connector;
 		wchar_t *name;
-	};
+	} Port;
 
-	class InPort : public Port
+	typedef class _InPort : public Port
+	{
+	} InPort;
+
+	typedef class _OutPort : public Port
+	{
+	} OutPort;
+
+	typedef class _Connector
 	{
 	public:
-		InPort();
-		~InPort();
-	};
-
-	class OutPort : public Port
-	{
-	public:
-		OutPort();
-		~OutPort();
-	};
-
-	class Connector
-	{
-	public:
-		Connector();
-		~Connector();
 		wchar_t *name;
 		InPort *in;
 		OutPort *out;
-	};
+	} Connector;
 
 }
 

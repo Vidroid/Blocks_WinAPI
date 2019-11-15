@@ -8,8 +8,9 @@
 #include "Drawing.h"
 #ifndef USE_CLASSES
 #include "BlockStructs.cpp"
-#elif
+#else
 #include "BlockClasses.cpp"
+using namespace Blocks;
 #endif
 
 #define IntPoint(x,y) D2D1::Point2F((FLOAT)(x), (FLOAT)(y))

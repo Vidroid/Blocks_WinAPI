@@ -4,7 +4,6 @@
 #define CURRENT_DRAW_TYPE DT_DX
 
 #define USE_CLASSES
-#undef USE_CLASSES
 
 #ifndef byte
 typedef unsigned char byte;
