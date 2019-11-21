@@ -1,0 +1,5 @@
+Block() => | InPort() => Connector()
+           | OutPort() => Connector()
+
+~Block() => | ~InPort() => ~Connector()
+            | ~OutPort() => ~Connecotr()

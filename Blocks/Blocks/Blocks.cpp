@@ -1,3 +1,4 @@
+#include "Config.h"
 #include "Blocks.hpp"
 
 // Direct2D interfaces
@@ -26,7 +27,7 @@ IDWriteTextFormat *pBlockHeaderTextFormat;
 
 // Drawing variables
 DrawType drawType;
-InitProc initProc;
+InitProc Init;
 DrawProc Draw;
 void *drawArg;
 
@@ -41,6 +42,8 @@ RECT clientRect;
 HWND hMainWindow;
 PAINTSTRUCT ps;
 int blockHeaderHeight = 20, closeButtonSize = blockHeaderHeight, portSize = 3, _x, _y;
+Block b1;
+Block b2;
 Block *selectedBlock, *draggingBlock;
 
 Space _space;
@@ -65,15 +68,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	switch (drawType) {
 	case DT_GDI:
 		Draw = GDIDraw;
-		initProc = GDIInit;
+		Init = GDIInit;
 		break;
 	case DT_DIB:
 		Draw = DIBDraw;
-		initProc = DIBInit;
+		Init = DIBInit;
 		break;
 	case DT_DX:
 		Draw = DXDraw;
-		initProc = DXInit;
+		Init = DXInit;
 		break;
 	}
 
@@ -83,14 +86,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	hMainWindow = CreateWindowExW(0, mainWindowClassName, mainWindowLoadingTitle, mainWindowStyle, 0, 0, 800, 600, 0, 0, 0, 0);
 	GetClientRect(hMainWindow, &clientRect);
 
-	initProc();
+	Init();
 
-	space->blocks = (Block *)calloc(2, sizeof(Block));
-#ifndef USE_CLASSES
-	Block b1 = {10, 180, 120, 120, L"Block 1!", false, false, {0, 2}};
-	Block b2 = {180, 10, 120, 120, L"Block 2!", false, false, {3, 3}};
-#else
-	Block b1;
+	//Block b1;// = {10, 180, 120, 120, L"Block 1!", false, false, {0, 2}};
+	//Block b2;// = {180, 10, 120, 120, L"Block 2!", false, false, {3, 3}};
+
 	b1.x = 10;
 	b1.y = 180;
 	b1.width = 120;
@@ -98,7 +98,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	b1.headerString = L"Block 1!";
 	b1.ports.inPortsCount = 0;
 	b1.ports.outPortsCount = 2;
-	Block b2;
 	b2.x = 180;
 	b2.y = 10;
 	b2.width = 120;
@@ -106,7 +105,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	b2.headerString = L"Block 2!";
 	b2.ports.inPortsCount = 3;
 	b2.ports.outPortsCount = 3;
-#endif
+
+	space->blocks = (Block *)calloc(2, sizeof(Block));
 	space->blocks[0] = b1;
 	space->blocks[1] = b2;
 	space->blockCount = 2;
@@ -119,7 +119,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		TranslateMessage(&msg);
 		DispatchMessageW(&msg);
 	}
-
+	
 	ExitProcess(0);
 
 }
@@ -135,8 +135,9 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		UpdateWindow(hMainWindow);
 		return 0;
 	case WM_DESTROY:
-		PostQuitMessage(0);
-		return 0;
+		ExitProcess(0);
+		//PostQuitMessage(0);
+		//return 0;
 	case WM_SIZE:
 		if (hMainWindow) {
 			if (!GetClientRect(hMainWindow, &clientRect)) {
@@ -149,8 +150,9 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		return 0;
 	case WM_KEYDOWN:
 		if (wParam == VK_ESCAPE) {
-			PostQuitMessage(0);
-			return 0;
+			ExitProcess(0);
+			//PostQuitMessage(0);
+			//return 0;
 		}
 		InvalidateRect(hMainWindow, &clientRect, 0);
 		break;
@@ -164,6 +166,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 					if (x > block->x + block->width - closeButtonSize) {
 						block->x = -1000;
 						block->y = -1000;
+						//delete block;
 						return 0;
 					}
 					draggingBlock = block;

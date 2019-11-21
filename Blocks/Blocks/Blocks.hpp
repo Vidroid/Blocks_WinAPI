@@ -10,8 +10,9 @@
 #include "BlockStructs.cpp"
 #else
 #include "BlockClasses.cpp"
-using namespace Blocks;
 #endif
+
+using namespace Blocks;
 
 #define IntPoint(x,y) D2D1::Point2F((FLOAT)(x), (FLOAT)(y))
 #define IntRect(left,top,right,bottom) D2D1::RectF((FLOAT)(left), (FLOAT)(top), (FLOAT)(right), (FLOAT)(bottom))

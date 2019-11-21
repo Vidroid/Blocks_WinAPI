@@ -17,5 +17,8 @@ typedef unsigned char byte;
 #ifndef null
 #define null 0
 #endif
+#ifndef pointer
+#define pointer (void *)
+#endif
 
 #endif // __Config_h__
